@@ -4,6 +4,7 @@ const cors = require("cors");
 const dotenv = require("dotenv");
 const connectDB = require("./config/db");
 const attendanceRoutes = require("./routes/attendanceRoutes");
+const taskRoutes = require("./Routes/taskRoutes");
 
 // NEW
 const dailyProgressRoutes = require("./routes/dailyProgressRoutes");
@@ -19,7 +20,7 @@ app.use(express.json());
 
 app.use("/api/auth", authRoutes);
 app.use("/api/attendance", attendanceRoutes);
-
+app.use("/api/tasks", taskRoutes);
 // NEW
 app.use("/api/daily-progress", dailyProgressRoutes);
 

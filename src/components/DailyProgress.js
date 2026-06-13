@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Card,
   Badge,
@@ -7,147 +7,146 @@ import {
   TextInput,
 } from "flowbite-react";
 
+import {
+  getTasks,
+  addTask,
+  updateTask,
+  completeTask,
+} from "../api/taskApi";
+
 function DailyProgress() {
   const user = JSON.parse(localStorage.getItem("user"));
 
-  const status =
-    localStorage.getItem("status") || "Active";
+  const today = new Date().toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  });
 
-  const currentDate = new Date().toLocaleDateString(
-    "en-GB",
-    {
-      day: "2-digit",
-      month: "long",
-      year: "numeric",
-    }
-  );
+  const [ongoingTasks, setOngoingTasks] = useState([]);
+  const [completedTasks, setCompletedTasks] = useState([]);
 
   const [newTask, setNewTask] = useState("");
 
-  const [ongoingTasks, setOngoingTasks] = useState([
-    "Design Dashboard UI",
-    "Implement Sidebar Navigation",
-    "Connect React Router Pages",
-  ]);
-
-  const [completedTasks, setCompletedTasks] =
-    useState([
-      "Installed Node.js",
-      "Installed Flowbite React",
-      "Created Dashboard Page",
-    ]);
-
   const [openModal, setOpenModal] = useState(false);
-  const [selectedTask, setSelectedTask] =
-    useState("");
-  const [taskIndex, setTaskIndex] = useState(null);
+  const [selectedTask, setSelectedTask] = useState("");
+  const [selectedId, setSelectedId] = useState("");
 
-  // Add Task (Admin Only)
-  const handleAddTask = () => {
-    if (!newTask.trim()) return;
+  const loadTasks = async () => {
+    try {
+      const res = await getTasks();
 
-    setOngoingTasks([
-      ...ongoingTasks,
-      newTask,
-    ]);
+      const ongoing = res.data.filter(
+        (task) => task.status === "Ongoing"
+      );
 
-    setNewTask("");
+      const completed = res.data.filter(
+        (task) => task.status === "Completed"
+      );
+
+      setOngoingTasks(ongoing);
+      setCompletedTasks(completed);
+    } catch (error) {
+      console.log(error);
+    }
   };
 
-  // Open Update Modal
-  const handleUpdate = (task, index) => {
-    setSelectedTask(task);
-    setTaskIndex(index);
+  useEffect(() => {
+    loadTasks();
+  }, []);
+
+  const handleAddTask = async () => {
+    if (!newTask.trim()) return;
+
+    try {
+      await addTask(newTask);
+
+      setNewTask("");
+
+      loadTasks();
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const handleUpdate = (task) => {
+    setSelectedTask(task.title);
+    setSelectedId(task._id);
     setOpenModal(true);
   };
 
-  // Save Updated Task
-  const handleSave = () => {
-    if (taskIndex === null) return;
+  const handleSave = async () => {
+    try {
+      await updateTask(
+        selectedId,
+        selectedTask
+      );
 
-    const updatedTasks = [...ongoingTasks];
+      setOpenModal(false);
 
-    updatedTasks[taskIndex] =
-      selectedTask;
-
-    setOngoingTasks(updatedTasks);
-
-    setOpenModal(false);
+      loadTasks();
+    } catch (error) {
+      console.log(error);
+    }
   };
 
-  // Complete Task
-  const handleComplete = (index) => {
-    const completedTask =
-      ongoingTasks[index];
+  const handleCompleteTask = async (id) => {
+    try {
+      await completeTask(id);
 
-    setCompletedTasks((prev) => [
-      ...prev,
-      completedTask,
-    ]);
-
-    setOngoingTasks(
-      ongoingTasks.filter(
-        (_, i) => i !== index
-      )
-    );
+      loadTasks();
+    } catch (error) {
+      console.log(error);
+    }
   };
 
   return (
     <div className="ml-64 min-h-screen bg-gray-100 p-6">
 
-      {/* HEADER */}
       <Card className="mb-6">
         <h1 className="text-3xl font-bold text-[#007979]">
           Daily Progress
         </h1>
 
         <p className="text-gray-600 mt-2">
-          Track your daily work activities and
-          completed tasks.
+          Track daily work activities.
         </p>
       </Card>
+<Card className="mb-6">
+  <h2 className="text-xl font-bold mb-3">
+    Today's Details
+  </h2>
 
-      {/* TODAY DETAILS */}
-      <Card className="mb-6">
-        <h2 className="text-xl font-bold mb-3">
-          Today's Details
-        </h2>
+  <p>
+    <b>Date:</b> {today}
+  </p>
 
-        <p className="mb-2">
-          <b>Date:</b> {currentDate}
-        </p>
+  <p>
+    <b>Name:</b> {user?.name}
+  </p>
 
-        <p className="mb-2">
-          <b>Employee:</b>{" "}
-          {user?.name || "Unknown User"}
-        </p>
+  <p>
+    <b>Role:</b> {user?.role}
+  </p>
 
-        <p className="flex items-center gap-2">
-          <b>Status:</b>
+  <p className="flex items-center gap-2">
+    <b>Status:</b>
+    <Badge color="success">
+      Active
+    </Badge>
+  </p>
+</Card>
 
-          <Badge
-            color={
-              status === "Active"
-                ? "success"
-                : "failure"
-            }
-          >
-            {status}
-          </Badge>
-        </p>
-      </Card>
-
-      {/* ADMIN ADD TASK */}
       {user?.role === "Admin" && (
         <Card className="mb-6">
-          <h2 className="text-xl font-bold mb-4 text-[#007979]">
+          <h2 className="text-xl font-bold mb-4">
             Add New Task
           </h2>
 
           <div className="flex gap-3">
             <TextInput
-              placeholder="Enter task"
               value={newTask}
+              placeholder="Enter task"
               onChange={(e) =>
                 setNewTask(e.target.value)
               }
@@ -163,90 +162,65 @@ function DailyProgress() {
         </Card>
       )}
 
-      {/* ONGOING TASKS */}
-      <Card className="mb-6">
-        <h2 className="text-xl font-bold mb-4 text-[#007979]">
-          Ongoing Tasks
-        </h2>
+     <Card className="mb-6">
+  <h2 className="text-xl font-bold mb-4 text-[#007979]">
+    Ongoing Tasks
+  </h2>
 
-        {ongoingTasks.length === 0 ? (
-          <p className="text-gray-500">
-            No ongoing tasks.
-          </p>
-        ) : (
-          <ul className="space-y-3">
-            {ongoingTasks.map(
-              (task, index) => (
-                <li
-                  key={index}
-                  className="p-3 bg-blue-50 rounded-lg flex justify-between items-center"
-                >
-                  <span>{task}</span>
+  <ul className="space-y-3">
+    {ongoingTasks.map((task) => (
+      <li
+        key={task._id}
+        className="p-3 bg-blue-50 rounded-lg flex justify-between items-center"
+      >
+        <span>{task.title}</span>
 
-                  <div className="flex gap-2">
-                    <Button
-                      size="xs"
-                      color="warning"
-                      onClick={() =>
-                        handleUpdate(
-                          task,
-                          index
-                        )
-                      }
-                    >
-                      Update
-                    </Button>
+        <div className="flex gap-2">
 
-                    <Button
-                      size="xs"
-                      color="success"
-                      onClick={() =>
-                        handleComplete(
-                          index
-                        )
-                      }
-                    >
-                      Complete
-                    </Button>
-                  </div>
-                </li>
-              )
-            )}
-          </ul>
-        )}
-      </Card>
+          {user?.role === "Admin" && (
+            <Button
+              size="xs"
+              color="warning"
+              onClick={() => handleUpdate(task)}
+            >
+              Update
+            </Button>
+          )}
 
-      {/* COMPLETED TASKS */}
+          <Button
+            size="xs"
+            color="success"
+            onClick={() => handleCompleteTask(task._id)}
+          >
+            Complete
+          </Button>
+
+        </div>
+      </li>
+    ))}
+  </ul>
+</Card>
       <Card>
         <h2 className="text-xl font-bold mb-4 text-green-600">
           Completed Tasks
         </h2>
 
-        {completedTasks.length === 0 ? (
-          <p className="text-gray-500">
-            No completed tasks.
-          </p>
-        ) : (
-          <ul className="space-y-3">
-            {completedTasks.map(
-              (task, index) => (
-                <li
-                  key={index}
-                  className="p-3 bg-green-50 rounded-lg"
-                >
-                  ✔ {task}
-                </li>
-              )
-            )}
-          </ul>
-        )}
+        <ul className="space-y-3">
+          {completedTasks.map((task) => (
+            <li
+              key={task._id}
+              className="p-3 bg-green-50 rounded-lg"
+            >
+              ✅ {task.title}
+            </li>
+          ))}
+        </ul>
       </Card>
 
-      {/* UPDATE MODAL */}
       <Modal
         show={openModal}
+        popup
         size="md"
-        popup={true}
         onClose={() =>
           setOpenModal(false)
         }
@@ -278,7 +252,7 @@ function DailyProgress() {
             </Button>
 
             <Button
-              color="blue"
+              color="success"
               onClick={handleSave}
             >
               Save

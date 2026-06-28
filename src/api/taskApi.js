@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API = "http://localhost:5000/api/tasks";
+const API = "https://eonix-backend-7uv4.onrender.com/api/tasks";
 
 export const getTasks = () => axios.get(API);
 

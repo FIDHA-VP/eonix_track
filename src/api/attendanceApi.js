@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const API = axios.create({
-  baseURL: "http://localhost:5000/api/attendance",
+  baseURL: "https://eonix-backend-7uv4.onrender.com/api/attendance",
 });
 
 export const checkIn = (userId, mode) => {

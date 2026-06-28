@@ -13,7 +13,7 @@ function History() {
   const fetchHistory = async () => {
     try {
       const res = await axios.get(
-        "http://localhost:5000/api/daily-progress"
+        "https://eonix-backend-7uv4.onrender.com/api/daily-progress"
       );
 
       setHistory(res.data);

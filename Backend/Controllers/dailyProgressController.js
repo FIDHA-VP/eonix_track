@@ -1,4 +1,4 @@
-const DailyProgress = require("../models/DailyProgress");
+const DailyProgress = require("../Models/DailyProgress");
 
 // CREATE
 exports.createProgress = async (req, res) => {

@@ -1,4 +1,4 @@
-const Attendance = require("../models/Attendance");
+const Attendance = require("../Models/Attendance");
 
 // CHECK IN
 const checkIn = async (req, res) => {

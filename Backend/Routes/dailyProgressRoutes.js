@@ -7,7 +7,7 @@ const {
   getAllProgress,
   updateProgress,
   deleteProgress,
-} = require("../controllers/dailyProgressController");
+} = require("../Controllers/dailyProgressController");
 
 router.post("/", createProgress);
 
